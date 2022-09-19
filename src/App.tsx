@@ -8,6 +8,7 @@ import Toolbar from './Toolbar/Toolbar';
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
+  const [tgtDir, setTgtDir] = useState("");
 
   async function greet() {
     // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -18,13 +19,19 @@ function App() {
     invoke('sample_command')
   }
 
+  function cbTgtDir(path: string) : void {
+    invoke('set_tgt_dir', {path}).then(() => {
+      setTgtDir(path);
+    })
+  }
+
   return (
     <div className="container">
       <div className="row">
-        <Toolbar />
+        <Toolbar setTgtDir={cbTgtDir} />
       </div>
       <div className="row">
-        <Filer />
+        <Filer tgtDir={tgtDir} />
       </div>
     </div>
   );

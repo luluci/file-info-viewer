@@ -18,6 +18,7 @@ fn main() {
             greet,
             sample_command,
             init_filer,
+            set_tgt_dir,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -79,3 +80,7 @@ fn init_filer(path: String) -> (Vec<u32>, Vec<FilerItem>) {
     (cols, items)
 }
 
+#[tauri::command]
+fn set_tgt_dir(path: String) {
+    println!("invoked setTgtDir({})!", path);
+}

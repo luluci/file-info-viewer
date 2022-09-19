@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { invoke } from '@tauri-apps/api/tauri'
 import { open } from '@tauri-apps/api/dialog'
+import ToolbarProps from '../Props';
 import "./Toolbar.css";
 
-function Toolbar(props: any) {
+function Toolbar(props: ToolbarProps) {
   const [tgtDir, setTgtDir] = useState("")
 
   function openDialog() {
@@ -13,6 +14,7 @@ function Toolbar(props: any) {
     }).then(files => {
       if (typeof(files) === "string") {
         setTgtDir(files);
+        props.setTgtDir(files);
       }
     });
   }

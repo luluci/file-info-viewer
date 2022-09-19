@@ -34,7 +34,7 @@ function Header(props: any) {
   let items: Array<FilerItem> = props.items;
   const cols = headers.map(value => {
     return (
-      <th>
+      <th key={value.toString()}>
         <div>
           {items[0].props[value].key}
         </div>
@@ -48,7 +48,7 @@ function Header(props: any) {
     );
   });
   cols.push(
-    <th className='spacer' />
+    <th className='spacer' key="-1" />
   );
   //console.log(cols);
 
@@ -95,12 +95,12 @@ interface FilerState {
   items: Array<FilerItem>;
 }
 
-class Filer extends React.Component<{}, FilerState> {
+class Filer extends React.Component<{ tgtDir:string }, FilerState> {
   onloaded: boolean;
   raw_headers: Array<number>;
   raw_items: Array<FilerItem>;
 
-  constructor(props: any) {
+  constructor(props: { tgtDir: string }) {
     super(props);
 
     this.state = {
@@ -137,6 +137,7 @@ class Filer extends React.Component<{}, FilerState> {
   }
 
   render() {
+    console.log('render Filter');
     let className = 'Filer';
 
     return (
