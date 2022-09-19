@@ -1,0 +1,13 @@
+
+.Toolbar {
+    width: 100%;
+    display: flex;
+}
+
+.Toolbar button {
+    width: 100px;
+}
+
+.Toolbar input {
+    flex-grow: 1;
+}

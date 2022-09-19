@@ -3,6 +3,7 @@ import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
 import Filer from './Filer/Filer';
+import Toolbar from './Toolbar/Toolbar';
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
@@ -19,6 +20,9 @@ function App() {
 
   return (
     <div className="container">
+      <div className="row">
+        <Toolbar />
+      </div>
       <div className="row">
         <Filer />
       </div>

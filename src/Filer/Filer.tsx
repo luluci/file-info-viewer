@@ -1,5 +1,6 @@
 import React from 'react';
 import { invoke } from '@tauri-apps/api/tauri'
+import "./Filter.css";
 
 const PropKind = {
   Name: 0,
@@ -25,12 +26,24 @@ class FilerItem {
 
 
 function Header(props: any) {
+  function changeFilter() {
+    invoke('sample_command')
+  }
+
   let headers: Array<number> = props.headers;
   let items: Array<FilerItem> = props.items;
   const cols = headers.map(value => {
     return (
       <th>
-        {items[0].props[value].key}
+        <div>
+          {items[0].props[value].key}
+        </div>
+        <div>
+          <input
+            id={value.toString()}
+            onChange={changeFilter}
+            placeholder="Filter..." />
+        </div>
       </th>
     );
   });
@@ -84,6 +97,8 @@ interface FilerState {
 
 class Filer extends React.Component<{}, FilerState> {
   onloaded: boolean;
+  raw_headers: Array<number>;
+  raw_items: Array<FilerItem>;
 
   constructor(props: any) {
     super(props);
@@ -94,6 +109,9 @@ class Filer extends React.Component<{}, FilerState> {
     };
 
     this.onloaded = false;
+
+    this.raw_headers = Array<number>();
+    this.raw_items = Array<FilerItem>();
   }
 
 

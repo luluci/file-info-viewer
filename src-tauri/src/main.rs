@@ -57,18 +57,18 @@ fn init_filer(path: String) -> (Vec<u32>, Vec<FilerItem>) {
 
     let items = vec![
         FilerItem{
-        id: 0,
-        props: vec![
-            ItemProp{ id:PropKind::Name as u32, key:"name".to_string(), value:"file1".to_string() },
-            ItemProp{ id:PropKind::Path as u32, key:"path".to_string(), value:"file1.path".to_string() },
-        ]
+            id: 0,
+            props: vec![
+                ItemProp{ id:PropKind::Name as u32, key:"name".to_string(), value:"file1".to_string() },
+                ItemProp{ id:PropKind::Path as u32, key:"path".to_string(), value:"file1.path".to_string() },
+            ]
         },
         FilerItem{
-        id: 1,
-        props: vec![
-            ItemProp{ id:PropKind::Name as u32, key:"name".to_string(), value:"file2".to_string() },
-            ItemProp{ id:PropKind::Path as u32, key:"path".to_string(), value:"file2.path".to_string() },
-        ]
+            id: 1,
+            props: vec![
+                ItemProp{ id:PropKind::Name as u32, key:"name".to_string(), value:"file2".to_string() },
+                ItemProp{ id:PropKind::Path as u32, key:"path".to_string(), value:"file2.path".to_string() },
+            ]
         },
     ];
 
