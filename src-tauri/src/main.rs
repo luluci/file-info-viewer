@@ -4,7 +4,7 @@
 )]
 
 use serde::{ Serialize, Deserialize };
-
+use std::{fs, ffi::OsString};
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -18,7 +18,7 @@ fn main() {
             greet,
             sample_command,
             init_filer,
-            set_tgt_dir,
+            read_dir,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -52,35 +52,98 @@ struct FilerItem {
     props: Vec<ItemProp>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+enum EntryType {
+    File,
+    Dir,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Entry {
+    id: u32,
+    entry: EntryType,
+    name: String,
+    path: String,
+    size: u64,
+}
+
+
+
 #[tauri::command]
-fn init_filer(path: String) -> (Vec<u32>, Vec<FilerItem>) {
+fn init_filer(path: String) -> Vec<Entry> {
     println!("invoked init_filer({})!", path);
 
-    let items = vec![
-        FilerItem{
+    vec![
+        Entry {
             id: 0,
-            props: vec![
-                ItemProp{ id:PropKind::Name as u32, key:"name".to_string(), value:"file1".to_string() },
-                ItemProp{ id:PropKind::Path as u32, key:"path".to_string(), value:"file1.path".to_string() },
-            ]
+            entry: EntryType::File,
+            name: String::new(),
+            path: String::new(),
+            size: 1,
         },
-        FilerItem{
-            id: 1,
-            props: vec![
-                ItemProp{ id:PropKind::Name as u32, key:"name".to_string(), value:"file2".to_string() },
-                ItemProp{ id:PropKind::Path as u32, key:"path".to_string(), value:"file2.path".to_string() },
-            ]
-        },
-    ];
+    ]
+}
 
-    let cols: Vec<u32> = vec![
-        0,1
-    ];
+fn make_entry(item: fs::DirEntry, id: u32) -> Entry {
+    let path = item.path();
+    let entry = if path.is_dir() {
+        EntryType::Dir
+    } else {
+        EntryType::File
+    };
+    let size = if path.is_dir() {
+        0
+    } else {
+        if let Ok(metadata) = item.metadata() {
+            metadata.len()
+        } else {
+            0
+        }
+    };
+    let name = match item.file_name().into_string() {
+        Ok(n) => n,
+        Err(_) => "Invalid Unicode Name".to_string(),
+    };
+    let path = match path.into_os_string().into_string() {
+        Ok(n) => n,
+        Err(_) => "Invalid Unicode Path".to_string(),
+    };
 
-    (cols, items)
+    Entry{
+        id,
+        entry,
+        name,
+        path,
+        size,
+    }
 }
 
 #[tauri::command]
-fn set_tgt_dir(path: String) {
+fn read_dir(path: String) -> Vec<Entry> {
     println!("invoked setTgtDir({})!", path);
+    let mut id: u32 = 0;
+    let mut result = Vec::<Entry>::new();
+
+    match fs::read_dir(path) {
+        Err(why) => {
+            // 
+            println!("! {:?}", why.kind())
+        },
+        Ok(paths) => for path in paths {
+            match path {
+                Err(why) => {
+
+                },
+                Ok(item) => {
+                    // Entry作成
+                    let entry = make_entry(item, id);
+                    id += 1;
+                    //
+                    result.push(entry);
+                },
+            }
+        },
+    };
+
+    result
 }

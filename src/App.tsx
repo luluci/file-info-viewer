@@ -2,13 +2,15 @@ import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
-import Filer from './Filer/Filer';
+import { Filer, Entry, PropKind } from './Filer/Filer';
 import Toolbar from './Toolbar/Toolbar';
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
   const [tgtDir, setTgtDir] = useState("");
+  const [headers, setHeaders] = useState<Array<PropKind>>([PropKind.Name, PropKind.Path]);
+  const [items, setItems] = useState<Array<Entry>>([]);
 
   async function greet() {
     // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -20,9 +22,18 @@ function App() {
   }
 
   function cbTgtDir(path: string) : void {
-    invoke('set_tgt_dir', {path}).then(() => {
+
+    // Toolbar更新
+    invoke('read_dir', {path}).then(() => {
       setTgtDir(path);
     })
+
+    // Filer更新
+    const cbTgtDirImpl = async (path: string) => {
+      const entries = await invoke<Array<Entry>>('read_dir', { path });
+      setItems(entries);
+    }
+    cbTgtDirImpl(path);
   }
 
   return (
@@ -31,7 +42,7 @@ function App() {
         <Toolbar setTgtDir={cbTgtDir} />
       </div>
       <div className="row">
-        <Filer tgtDir={tgtDir} />
+        <Filer headers={headers} items={items} />
       </div>
     </div>
   );
