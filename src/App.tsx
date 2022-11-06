@@ -9,8 +9,8 @@ function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
   const [tgtDir, setTgtDir] = useState("");
-  const [headers, setHeaders] = useState<Array<PropKind>>([PropKind.Name, PropKind.Path]);
-  const [items, setItems] = useState<Array<Entry>>([]);
+  const [headers, setHeaders] = useState<Array<PropKind>>([PropKind.Name, PropKind.Ext, PropKind.Size, PropKind.ArchiveFiles, PropKind.Path]);
+//  const [items, setItems] = useState<Array<Entry>>([]);
 
   async function greet() {
     // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -25,15 +25,16 @@ function App() {
 
     // Toolbar更新
     invoke('read_dir', {path}).then(() => {
+      console.log('select dir: ' + path);
       setTgtDir(path);
     })
 
-    // Filer更新
-    const cbTgtDirImpl = async (path: string) => {
-      const entries = await invoke<Array<Entry>>('read_dir', { path });
-      setItems(entries);
-    }
-    cbTgtDirImpl(path);
+    // // Filer更新
+    // const cbTgtDirImpl = async (path: string) => {
+    //   const entries = await invoke<Array<Entry>>('read_dir', { path });
+    //   setItems(entries);
+    // }
+    // cbTgtDirImpl(path);
   }
 
   return (
@@ -42,7 +43,7 @@ function App() {
         <Toolbar setTgtDir={cbTgtDir} />
       </div>
       <div className="row">
-        <Filer headers={headers} items={items} />
+        <Filer headers={headers} uri={tgtDir} />
       </div>
     </div>
   );

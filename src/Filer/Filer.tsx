@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { invoke } from '@tauri-apps/api/tauri'
 import "./Filter.css";
+import { Loadable } from "../Lib/Loadable";
 
 // ファイラ列要素
 export const PropKind = {
   Name: 0,
   Path: 1,
   Size: 2,
+  Ext: 3,
+  ArchiveFiles: 4,
 } as const;
 export type PropKind = typeof PropKind[keyof typeof PropKind];
 // ファイラ列要素名称
@@ -21,6 +24,8 @@ export const PropKindMap: PropKindMap = {
   0: 'Name',
   1: 'Path',
   2: 'Size',
+  3: 'Extension',
+  4: 'ArchiveFiles',
 } as const;
 
 
@@ -30,6 +35,8 @@ export interface Entry {
   name: string;
   path: string;
   size: number;
+  ext: string;
+  archive_files: string[];
 }
 
 
@@ -75,14 +82,23 @@ const getEntryProp = (entry: Entry, idx: PropKind): string => {
       return entry.path;
     case PropKind.Size:
       return entry.size.toString();
+    case PropKind.Ext:
+      return entry.ext;
+    case PropKind.ArchiveFiles:
+      if (entry.archive_files.length > 0) {
+        return entry.archive_files[0];
+      } else {
+        return "";
+      }
     default:
       return "";
   };
 }
 
-function Body(props: { headerIndex: Array<PropKind>, items: Array<Entry> }) {
+function Body(props: { headerIndex: Array<PropKind>, items: ItemsLoader, uri: string }) {
   console.log(props.items);
-  const rows = props.items.map(entry => {
+  const value = props.items.get(props.uri);
+  const rows = value.map(entry => {
     const cols = props.headerIndex.map(idx => {
       return (
         <td>
@@ -118,41 +134,55 @@ function Body(props: { headerIndex: Array<PropKind>, items: Array<Entry> }) {
   );
 }
 
-export const Filer = (props: { headers: Array<PropKind>, items: Array<Entry> }) => {
-  // // 初回レンダリング時実行
-  // useEffect(() => {
-  //   const initHeader = async () => {
-  //     const entries = await invoke<Array<Entry>>('init_filer', { path: props.tgtDir });
-  //     setItems(entries);
-  //   };
-  //   initHeader();
-  //   console.log('render Filter: initHeader');
-  // }, []);
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchItems(path: string) {
+  //await sleep(5000);
+  return await invoke<Array<Entry>>('read_dir', { path });
+}
+
+class ItemsLoader {
+  #key: string;
+  #data: Loadable<Entry[]>;
+
+  constructor(key: string) {
+    this.#key = key;
+    this.#data = new Loadable(fetchItems(key));
+  }
+  get(key: string): Entry[] {
+    if (this.#key != key) {
+      this.#key = key;
+      this.#data = new Loadable(fetchItems(key));
+    }
+
+    return this.#data.getOrThrow();
+  }
+}
+
+export const Filer = (props: { headers: Array<PropKind>, uri: string }) => {
+  const [items] = useState(() => new ItemsLoader(props.uri));
   // フィルター処理用hook
   const [filtered, setFiltered] = useState<number>(0);
   useEffect(() => {
     console.log('render Filter: initHeader');
   }, [filtered]);
 
-  console.log('render Filter');
+  console.log('render Filter: path=' + props.uri);
   let className = 'Filer';
 
-  // フィルター適用
-  let filteredItems: Array<Entry>;
-  //
-  filteredItems = props.items;
-
-  // const getItems = async (path: string) => {
-  //   const entries = await invoke<Array<Entry>>('read_dir', { path });
-  //   rawItems.splice(0);
-  //   rawItems.push(...entries);
-  // }
-  // getItems(props.tgtDir);
+  // // フィルター適用
+  // let filteredItems: Array<Entry>;
+  // //
+  // filteredItems = props.items;
 
   return (
     <table className={className}>
       <Header headerIndex={props.headers} />
-      <Body headerIndex={props.headers} items={filteredItems} />
+      <Suspense fallback={<tbody><tr><td>Loading...</td></tr></tbody>}>
+        <Body headerIndex={props.headers} items={items} uri={props.uri} />
+      </Suspense>
     </table>
   );
 }

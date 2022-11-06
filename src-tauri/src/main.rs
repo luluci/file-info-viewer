@@ -4,7 +4,8 @@
 )]
 
 use serde::{ Serialize, Deserialize };
-use std::{fs, ffi::OsString};
+use std::fs::{self, File};
+use compress_tools::*;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -32,26 +33,6 @@ fn sample_command() {
     println!("invoked sample_comamnd!");
 }
 
-enum PropKind {
-    Name,
-    Path,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ItemProp {
-    id: u32,
-    key: String,
-    value: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct FilerItem {
-    id: u32,
-    //path: String,
-    // ディレクトリ/ファイルが持つ情報を配列で記憶
-    props: Vec<ItemProp>,
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 enum EntryType {
     File,
@@ -65,8 +46,9 @@ struct Entry {
     name: String,
     path: String,
     size: u64,
+    ext: String,
+    archive_files: Vec<String>,
 }
-
 
 
 #[tauri::command]
@@ -80,42 +62,10 @@ fn init_filer(path: String) -> Vec<Entry> {
             name: String::new(),
             path: String::new(),
             size: 1,
+            ext: String::new(),
+            archive_files: vec![],
         },
     ]
-}
-
-fn make_entry(item: fs::DirEntry, id: u32) -> Entry {
-    let path = item.path();
-    let entry = if path.is_dir() {
-        EntryType::Dir
-    } else {
-        EntryType::File
-    };
-    let size = if path.is_dir() {
-        0
-    } else {
-        if let Ok(metadata) = item.metadata() {
-            metadata.len()
-        } else {
-            0
-        }
-    };
-    let name = match item.file_name().into_string() {
-        Ok(n) => n,
-        Err(_) => "Invalid Unicode Name".to_string(),
-    };
-    let path = match path.into_os_string().into_string() {
-        Ok(n) => n,
-        Err(_) => "Invalid Unicode Path".to_string(),
-    };
-
-    Entry{
-        id,
-        entry,
-        name,
-        path,
-        size,
-    }
 }
 
 #[tauri::command]
@@ -146,4 +96,69 @@ fn read_dir(path: String) -> Vec<Entry> {
     };
 
     result
+}
+
+fn make_entry(item: fs::DirEntry, id: u32) -> Entry {
+    let pathbuf = item.path();
+    let entry = if pathbuf.is_dir() {
+        EntryType::Dir
+    } else {
+        EntryType::File
+    };
+    let mut size = 0;
+    // let name = match item.file_name().into_string() {
+    //     Ok(n) => n,
+    //     Err(_) => "Invalid Unicode Name".to_string(),
+    // };
+    let name = item.file_name().to_string_lossy().to_string();
+    let path = item.path().to_string_lossy().to_string();
+    let ext = match pathbuf.extension() {
+        Some(ex) => {
+            ex.to_string_lossy().to_string()
+        },
+        None => "".to_string(),
+    };
+    // metadata check
+    if let Ok(metadata) = item.metadata() {
+        size = metadata.len();
+    } else {
+        
+    }
+    // archive file check
+    let archive_files = match ext.to_lowercase().as_str() {
+        "zip" => {
+            make_archive_list(&path)
+        }
+        _ => {
+            vec![]
+        }
+    };
+
+    Entry{
+        id,
+        entry,
+        name,
+        path,
+        size,
+        ext,
+        archive_files,
+    }
+}
+
+fn make_archive_list(path: &String) -> Vec<String> {
+    match File::open(path) {
+        Err(_) => {
+            vec![]
+        },
+        Ok(file) => {
+            match list_archive_files(file) {
+                Err(_) => {
+                    vec![]
+                },
+                Ok(list) => {
+                    list
+                }
+            }
+        },
+    }
 }
